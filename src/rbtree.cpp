@@ -141,6 +141,7 @@ bool RBTree<T>::Node::insert (T value)
         Node::lastInsertedIndex = Node::count++;
         element.index = Node::lastInsertedIndex;
         //std::cout << "New element stop" << std::endl;
+  //  std::cout << "Insert stop" << std::endl;
         return false;
     }
     else
@@ -165,6 +166,7 @@ bool RBTree<T>::Node::insert (T value)
         {
             //std::cout << "Equal" << std::endl;
             Node::lastInsertedIndex = element.index;
+    //std::cout << "Insert stop" << std::endl;
             return true;
         }
 
@@ -174,18 +176,19 @@ bool RBTree<T>::Node::insert (T value)
         if (temp->insert (value))
         {
             //std::cout << "Return true" << std::endl;
+  //  std::cout << "Insert stop" << std::endl;
             return true;
         }
         else
         {
             balanceInsert();
             //std::cout << "Return false" << std::endl;
+//    std::cout << "Insert stop" << std::endl;
             return false;
         }
         //std::cout << "Real inserting stop" << std::endl;
         //std::cout << "Old element stop" << std::endl;
     }
-    //std::cout << "Insert stop" << std::endl;
 }
 
 template <class T>
@@ -222,7 +225,7 @@ void RBTree<T>::Node::setColor (Color color)
 template <class T>
 void RBTree<T>::Node::balanceInsert ()
 {
-    //std::cout << "Balance start" << std::endl;
+//    std::cout << "Balance start" << std::endl;
     //std::cout << " Color = " << (color==Black?"Black":"Red") << std::endl;
     if (color == Black)
     {
@@ -274,49 +277,58 @@ void RBTree<T>::Node::balanceInsert ()
         }
         
     }
-//    std::cout << "Balance end" << std::endl;
+   // std::cout << "Balance end" << std::endl;
 }
 
 template <class T>
 void RBTree<T>::Node::rightRotate ()
 {
-    //std::cout << "  Right rotate start" << std::endl;
+ //   std::cout << "  Right rotate start" << std::endl;
     Node *temp = new Node ();
     temp->setElement(this->element);
+	temp->setColor(color);
     temp->right = this->right;
     if (this->left)
         temp->left = this->left->right;
     this->right = temp;
 
-    element = left->getElement();
+   // std::cout << "  temp inserted" << std::endl;
+
     if (this->left)
 	{
+		element = left->getElement();
+		color = left->getColor();
 		temp = left;
         this->left = left->left;
 		delete temp;
+		temp = 0;
 	}
-    //std::cout << "  Right rotate stop" << std::endl;
+   // std::cout << "  Right rotate stop" << std::endl;
 }
 
 template <class T>
 void RBTree<T>::Node::leftRotate ()
 {
-    //std::cout << "  Left rotate start" << std::endl;
+//    std::cout << "  Left rotate start" << std::endl;
     Node *temp = new Node ();
     temp->setElement(this->element);
+	temp->setColor(color);
     temp->left = this->left;
     if (this->right)
         temp->right = this->right->left;
     this->left = temp;
 
-    //std::cout << "  temp inserted" << std::endl;
+  //  std::cout << "  temp inserted" << std::endl;
 
-    element = right->getElement();
-    temp = right;
-    if (this->right)
-        this->right = this->right->right;
-
-    delete temp;
+	if (this->right)
+	{
+		element = right->getElement();
+		color = right->getColor();
+		temp = right;
+		this->right = this->right->right;
+		delete temp;
+		temp = 0;
+	}
     //std::cout << "  Left rotate stop" << std::endl;
 }
 
@@ -343,7 +355,7 @@ void RBTree<T>::Node::printLine(int depth) const
 template <class T>
 void RBTree<T>::Node::clear()
 {
-//	std::cout << "Clear node " << element.value << " start!" << std::endl;
+	//std::cout << "Clear node " << element.value << " start!" << std::endl;
 	if (!left && !right)
 		return;
 
@@ -352,15 +364,17 @@ void RBTree<T>::Node::clear()
 	//	std::cout << " -left: " << left->getElement().value << std::endl;
 		left->clear();
 		delete left;
+		left = 0;
 	}
 	if (right)
 	{
 	//	std::cout << " -left: " << right->getElement().value << std::endl;
 		right->clear();
 		delete right;
+		right = 0;
 	}
-	this->~Node();
-//	std::cout << "Clear node stop!" << std::endl;
+	//this->~Node();
+	//std::cout << "Clear node stop!" << std::endl;
 }
 
 template <class T>
