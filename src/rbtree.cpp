@@ -24,7 +24,7 @@ int RBTree<T>::insert (T value)
 
     root->setColor(Node::Black);
 
-    return Node::lastInsertedIndex;
+    return Node::lastTouchedIndex;
 }
 
 template <class T>
@@ -55,33 +55,40 @@ void RBTree<T>::save (std::string filepath)
 	stream.close();
 }
 
-/*template <class T>
+template <class T>
 int RBTree<T>::load (std::string filepath)
 {
-	int res;
 	std::fstream stream;
 	stream.open(filepath.c_str(), std::ios_base::in | std::ios_base::binary);
+
+	// Запомниаем позицию в файле
+	int filepos = stream.tellg();
+
 	std::string line;
 	getline (stream, line);
-	if (!line.isEmpty())
-	{
-		if (line[0] == ' ')
-			return 1;
-		clear();
-		if (line != "<None>")
-		{
-			root = new Node();
-			std::vector<std::string> vec = split (line, '-');
-			if (vec.size() != 3)
-				return 1;
-			root->element.index = vec[0];
-//			memcpy (&(root->element.value), 
-			res = root->load(stream, 0);
-		}
-	}
+	std::cout << "Пойдёт на откат " << line << std::endl;
+	if (line.empty())
+		return 1;
+	if (line[0] == ' ')
+		return 2;
+
+	clear();
+	if (line == "<None>")
+		return 0;
+
+	// После верхних проверок будем считать, что данные валидны
+	// Возвращаемся на место
+	stream.seekg(filepos);
+
+	root = new Node();
+	int res = root->load(stream, 0);
 	stream.close();
+
+	if (res)
+		clear();
+
 	return res;
-}*/
+}
 
 template <class T>
 int RBTree<T>::getCount () const
@@ -100,10 +107,19 @@ void RBTree<T>::clear ()
 }
 
 template <class T>
+int RBTree<T>::search (T value)
+{
+    if (root == 0)
+		return -1;
+
+    return root->search(value);
+}
+
+template <class T>
 long long RBTree<T>::Node::count = 0;
 
 template <class T>
-long long RBTree<T>::Node::lastInsertedIndex = -1;
+long long RBTree<T>::Node::lastTouchedIndex = -1;
 
 template <class T>
 RBTree<T>::Node::Node()
@@ -138,8 +154,8 @@ bool RBTree<T>::Node::insert (T value)
     {
         //std::cout << "New element start" << std::endl;
         element.value = value;
-        Node::lastInsertedIndex = Node::count++;
-        element.index = Node::lastInsertedIndex;
+        Node::lastTouchedIndex = Node::count++;
+        element.index = Node::lastTouchedIndex;
         //std::cout << "New element stop" << std::endl;
   //  std::cout << "Insert stop" << std::endl;
         return false;
@@ -165,7 +181,7 @@ bool RBTree<T>::Node::insert (T value)
         else
         {
             //std::cout << "Equal" << std::endl;
-            Node::lastInsertedIndex = element.index;
+            Node::lastTouchedIndex = element.index;
     //std::cout << "Insert stop" << std::endl;
             return true;
         }
@@ -394,40 +410,150 @@ void RBTree<T>::Node::save (std::fstream &stream, int depth)
 		stream << "<None>" << std::endl;
 }
 
-/*template <class T>
-int RBTree<T>::Node::load (std::fstream &stream, int &depth)
+template <class T>
+int RBTree<T>::Node::load (std::fstream &stream, int spacecount)
 {
+	int res;
+
+	// Считываем сроку для текущего элемента
 	std::string line;
+	getline(stream, line);
+
+	std::cout << "Это не на откат " << line << std::endl;
+
+	std::vector<std::string> vec = split(line, '-');
+	if (vec.size() != 3)
+		return 3;
+
+	element.index = std::stoll (vec[0]);
+	element.value = vec[1];
+	if (vec[2] == "Red")
+		color = Red;
+	else if (vec[2] == "Black")
+		color = Black;
+	else
+		return 4;
+	
+	Node::count++;
+
+	// Теперь проверяем левый узел
+	// Запоминаем позицию
+	int filepos = stream.tellg();
+
 	getline (stream, line);
-	if (line.isEmpty())
+	std::cout << "Пойдёт на левый " << line << std::endl;
+
+	// Признак окончания файла
+	if (line.empty())
+		return 0;
+	else if (line.find("<None>") == std::string::npos)
+	{
+		// Тут проверяем количество пробелов
+		// Если позиция последнего пробела равна текущей глубине,
+		// то это ребёнок
+		if (line.find_last_of(' ') != spacecount)
+		{
+			// Если позиция равна глубине - 1, то это брат
+			if (line.find_last_of(' ') != spacecount - 1)
+				return 2;
+			else
+				return 0;
+		}
+
+		// Удаляем левые пробелы
+		line.erase(0, line.find_first_not_of(' '));
+		if (line.empty())
+			return 1;
+
+		// Строка проверена. Откатываемся...
+		stream.seekg (filepos);
+
+		left = new Node();
+		res = left->load(stream, spacecount + 1);
+		if (res)
+			return res;
+	}
+
+	// После того, как слева всё будет готово, 
+	// позиция файла будет на правом узле
+	// Делаем с ним аналогичные манипуляции
+
+	// Запоминаем позицию
+	filepos = stream.tellg();
+
+	getline (stream, line);
+	std::cout << "Пойдёт на правый " << line << std::endl;
+
+	if (line.find("<None>") != std::string::npos || line.empty())
 		return 0;
 
-	if (line == "<None>")
-
-
-
-	std::vector<std::string> vec = split (line, '-');
-	if (vec.size() != 3)
-		return 1;
-
-
-	
-
-
-	int spaces = 0;
-
-	
-
-
-	// Проверяем, чтобы коичество пробелов слева совпадало с глубиной
-	for (auto it = line.begin(); it != line.end(); ++it)
-		if (*it == ' ')
-			++spaces;
+	// Тут проверяем количество пробелов
+	// Если позиция последнего пробела равна текущей глубине,
+	// то это ребёнок
+	if (line.find_last_of(' ') != spacecount)
+	{
+		// Если позиция равна глубине - 1, то это брат
+		if (line.find_last_of(' ') != spacecount - 1)
+			return 2;
 		else
-			break;
-	if (spaces != depth)
-		return 1;
-	
-	// Отбрасываем пробелы слева
+			return 0;
+	}
 
-}*/
+	// Удаляем левые пробелы
+	line.erase(0, line.find_first_not_of(' '));
+	if (line.empty())
+		return 1;
+
+	// Строка проверена. Откатываемся...
+	stream.seekg (filepos);
+
+	right = new Node();
+	res = right->load(stream, spacecount + 1);
+	if (res)
+		return res;
+
+	return 0;
+}
+
+template <class T>
+std::vector<std::string> RBTree<T>::Node::split(std::string temp, char delim)
+{
+	std::vector<std::string> res;
+
+	int pos = 0;
+	int size = 0;
+	while ((size = temp.find(delim, pos)) != std::string::npos)
+	{
+		size = size - pos;
+		res.push_back(temp.substr(pos, size));
+		pos = pos + size + 1;
+	}
+	size = temp.length();
+	size -= pos;
+	res.push_back(temp.substr(pos, size));
+
+	return res;
+}
+
+template <class T>
+int RBTree<T>::Node::search (T value)
+{
+	if (value < element.value)
+	{
+		if (left == 0)
+			return -1;
+		else
+			return left->search(value);
+	}
+	else if (value > element.value)
+	{
+		if (right == 0)
+			return -1;
+		else
+			return right->search(value);
+	}
+	else
+	{
+		return element.index;
+	}
+}

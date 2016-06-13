@@ -30,11 +30,13 @@ public:
     // save tree to a file
     void save (std::string filepath);
     // load a tree from a file
-//    void load (std::string filepath);
+    int load (std::string filepath);
     // get count of all elements
     int getCount () const;
     // clear the tree
     void clear ();
+	// search for the element
+	int search (T value);
 private:
     class Node;
 
@@ -69,11 +71,14 @@ public:
 	void clear ();
 	void save (std::fstream &stream, int depth);
     static long long count;
-    static long long lastInsertedIndex;
+    static long long lastTouchedIndex;
+	int load(std::fstream &stream, int spacecount);
+    int search (T value);
 private:
     void balanceInsert ();
     void leftRotate ();
     void rightRotate ();
+	std::vector<std::string> split(std::string, char delim);
     Element element;
     Color color;
     Node *left, *right;
